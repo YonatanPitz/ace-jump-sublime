@@ -102,6 +102,7 @@ class AceJumpCommand(sublime_plugin.WindowCommand):
         self.case_sensitivity = settings.get("search_case_sensitivity", True)
         self.jump_behind_last = settings.get("jump_behind_last_characters", False)
         self.save_files_after_jump = settings.get("save_files_after_jump", False)
+        self.number_of_chars_to_match = settings.get("number_of_chars_to_match", 1)
 
         self.view_settings = settings.get("view_settings", [])
         self.view_values = get_views_settings(
@@ -131,20 +132,18 @@ class AceJumpCommand(sublime_plugin.WindowCommand):
 
     def on_input(self, command):
         """Fires the necessary actions for the current input"""
-
-        if len(command) == 1:
+        if len(command) == self.number_of_chars_to_match:
             self.char = command
-            if self.char == "<" or self.char == ">":
+            if "<" in self.char or ">" in self.char:
                 # re.escape escapes these 2 characters but it isn't needed for view.find()
                 self.add_labels(self.regex().format(self.char))
             else:
                 self.add_labels(self.regex().format(re.escape(self.char)))
             return
 
-        if len(command) == 2:
-            self.target = command[1]
-
-        self.window.run_command("hide_panel", {"cancel": True})
+        if len(command) > self.number_of_chars_to_match:
+            self.target = command[self.number_of_chars_to_match]
+            self.window.run_command("hide_panel", {"cancel": True})
 
     def submit(self):
         """Handles the behavior after closing the prompt"""
@@ -305,6 +304,7 @@ class AceJumpCharCommand(AceJumpCommand):
             mode = 3
 
         return AceJumpCommand.jump(self, index)
+
 
 class AceJumpLineCommand(AceJumpCommand):
     """Specialized command for line-mode"""
